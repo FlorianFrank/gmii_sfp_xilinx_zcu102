@@ -1,6 +1,7 @@
 # ZCU102 SFP+ Ethernet Implementation
 
-This repository is based on the [Xilinx ZCU102 Ethernet implementation](https://github.com/Xilinx-Wiki-Projects/ZCU102-Ethernet). It utilizes the SFP+ connector provided by the ZCU102 Evaluation Board.
+This repository contains an implementation of Ethernet on the PL, enabling access to Gigabit SFP interfaces. The design can be utilized by the PS to connect to an lwIP stack.
+The design is based on the [Xilinx ZCU102 Ethernet implementation](https://github.com/Xilinx-Wiki-Projects/ZCU102-Ethernet). It utilizes the SFP+ connector provided by the ZCU102 Evaluation Board.
 
 ## Requirements
 

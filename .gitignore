@@ -1,0 +1,6 @@
+*.xsa
+zcu_102_gmii_sfp.cache/
+zcu_102_gmii_sfp.runs/
+zcu_102_gmii_sfp.gen/
+zcu_102_gmii_sfp.hw/
+zcu_102_gmii_sfp.ip_user_files/
