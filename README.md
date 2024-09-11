@@ -1,93 +1,140 @@
-# zcu_102_gmii_sfp
+# ZCU102 SFP+ Ethernet Implementation
+
+This repository is based on the [Xilinx ZCU102 Ethernet implementation](https://github.com/Xilinx-Wiki-Projects/ZCU102-Ethernet). It utilizes the SFP+ connector provided by the ZCU102 Evaluation Board.
+
+## Requirements
+
+To use this implementation, you need the following:
+
+- ZCU102 Evaluation Board
+- Cisco GLC-T compatible SFP+ interface ([QSFPTEK QT-SFP-T](https://www.amazon.de/dp/B081HZ8N47?ref=ppx_yo2ov_dt_b_fed_asin_title))
+- [Xilinx TEMAC License](https://www.xilinx.com/products/intellectual-property/temac-order.html) for the Tri-Mode Ethernet MAC (TEMAC) IP core.
+
+**Tested on Vivado 2022.1**
+
+## Implementation
+
+This implementation is based on the block design described in [PL_ETH_SGMII](https://github.com/Xilinx-Wiki-Projects/ZCU102-Ethernet/tree/main/2019.2/pl_eth_sgmii).
+
+The block design is illustrated in the following figure:
+
+![Block Design](documentation/figures/block_design.png)
+
+### Overview
+
+This design uses the AXI 1G/2.5G Ethernet Subsystem to access the transceivers, connected to the ZYNQ UltraScale+ system via the AXI streaming interface. The AXI 1G/2.5G Ethernet Subsystem is configured to use the GMII protocol (note: 1000BaseX was tested but did not work).
+
+The AXI interface uses a DMA mapped into the address space with a data width of 128-bit. Can be accessed via AXI Ethernet on the PS side. Other modules like the io_wrapper or the buffer_io are simply to set debugging symbols or to enable the interfae. 
 
 
+The `rx_p`, `rx_n`, `tx_p`, and `tx_n` signals are mapped to the SFP0 interface. The SFP interfaces on the ZCU102 board are arranged as follows:
 
-## Getting started
+|       |       |
+|-------|-------|
+| SFP2  | SFP0  |
+| SFP3  | SFP1  |
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### Constraints for SFP Interfaces
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+```Verilog
+    set_property PACKAGE_PIN A12 [get_ports {sfp_tx_dis[0]}] // Must be driven high in order to enable the interface
 
-## Add your files
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+    set_property PACKAGE_PIN D2 [get_ports s0_rxp];
+    set_property PACKAGE_PIN D1 [get_ports s0_rxn];
+    set_property PACKAGE_PIN E4 [get_ports s0_txp];
+    set_property PACKAGE_PIN E3 [get_ports s0_txn];
 
 ```
-cd existing_repo
-git remote add origin https://git.fim.uni-passau.de/frankfl/zcu_102_gmii_sfp.git
-git branch -M main
-git push -uf origin main
+
+In case one of the other SFP pins is used define the following constraints.
+
+
+*SFP1:*
+
+```Verilog
+    set_property PACKAGE_PIN A13 [get_ports {sfp_tx_dis[0]}] // Must be driven high in order to enable the interface
+
+    set_property PACKAGE_PIN C4 [get_ports s0_rxp]; # Bank 230 - MGTHRXP1_230
+    set_property PACKAGE_PIN C3 [get_ports s0_rxn]; # Bank 230 - MGTHRXN1_230
+    set_property PACKAGE_PIN D6 [get_ports s0_txp]; # Bank 230 - MGTHTXP1_230
+    set_property PACKAGE_PIN D5 [get_ports s0_txn]; # Bank 230 - MGTHTXN1_230
+
 ```
 
-## Integrate with your tools
+*SFP2:*
 
-- [ ] [Set up project integrations](https://git.fim.uni-passau.de/frankfl/zcu_102_gmii_sfp/-/settings/integrations)
+```Verilog
+    set_property PACKAGE_PIN B13 [get_ports {sfp_tx_dis[0]}] // Must be driven high in order to enable the interface
 
-## Collaborate with your team
+    set_property PACKAGE_PIN B2 [get_ports s0_rxp]; # Bank 230 - MGTHRXP2_230
+    set_property PACKAGE_PIN B1 [get_ports s0_rxn]; # Bank 230 - MGTHRXN2_230
+    set_property PACKAGE_PIN B6 [get_ports s0_txp]; # Bank 230 - MGTHTXP2_230
+    set_property PACKAGE_PIN B5 [get_ports s0_txn]; # Bank 230 - MGTHTXN2_230
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```
 
-## Test and Deploy
+*SFP2:*
 
-Use the built-in continuous integration in GitLab.
+```Verilog
+    set_property PACKAGE_PIN C13 [get_ports {sfp_tx_dis[0]}] // Must be driven high in order to enable the interface
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+    set_property PACKAGE_PIN A4 [get_ports s0_rxp]; # Bank 230 - MGTHRXP3_230
+    set_property PACKAGE_PIN A3 [get_ports s0_rxn]; # Bank 230 - MGTHRXN3_230
+    set_property PACKAGE_PIN A8 [get_ports s0_txp]; # Bank 230 - MGTHTXP3_230
+    set_property PACKAGE_PIN A7 [get_ports s0_txn]; # Bank 230 - MGTHTXN3_230
 
-***
+```
 
-# Editing this README
+### GT Location Setup for AXI Ethernet
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+When configuring the **AXI 1G/2.5G Ethernet Subsystem**, you must set the correct **GT location**. This can be done under the *Locations* tab of the IP Core configuration. The GT locations for each SFP interface are as follows:
 
-## Suggestions for a good README
+- **X1Y12** for **SFP0**
+- **X1Y13** for **SFP1**
+- **X1Y14** for **SFP2**
+- **X1Y15** for **SFP3**
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+### Management Clock Configuration
 
-## Name
-Choose a self-explaining name for your project.
+To drive the AXI 1G/2.5G Ethernet Subsystem, the management clock must be set to **156.25 MHz**, which corresponds to a clock period of **6.4 ns**. You can configure this using the following command in your constraint file:
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+```Verilog
+    create_clock -period 6.400 -name mgt_clk [get_ports mgt_clk_clk_p]
+```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+**Specifying the clock with a phase of 8 ns and thus 125 MHz as written in verious tutorials is not working!**
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Additionally the PL DIP SW13 array of 8 switches is utilize for test purposes. 
+There, button SW1 must be enabled, in order to drive **sfp_tx_disable** high and able the sfp interface. 
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Furthermore make sure you bridge Jumper J16 in order to enable the interface.
+![](documentation/figures/J16_Pin.png)
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### Using the SFP Interface in an Application
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+To use the SFP interface within an application, export the bitstream by navigating to **File -> Export -> Hardware -> Include Bitstream**. The resulting `.xsa` file can then be imported into Vitis, where you can test a sample application, such as **LwIP Echo**.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+When you start the application, the output should look similar to the following:
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+![](documentation/figures/screenshot_vitis.png)
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+> **Note:** If your module is not supported, the application may hang at `Waiting for PHY to complete autonegotiation`.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+### Debugging
 
-## License
-For open source projects, say how it is licensed.
+For debugging purposes, several signals are forwarded to the PL LEDs located above the SW13 switch array.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+The LEDs indicate the following statuses:
+
+- **LED 0 (AG14/DS38):** AXI Reset — This should remain constantly high, indicating no reset operation is being performed.
+- **LED 2 (AE13/DS39):** AXI Light Clock — Used to verify that the management interface for the DMA module is operational.
+- **LED 4 (AJ15/DS41):** Management Clock — Ensures that the management clock is correctly configured to **156.25 MHz**.
+- **LED 6 (AH14/DS43):** RX Clock Output — Used to check if data is being received by the interface.
+
+The following figure shows the LED interface. Please note that **Switch 8** must be set to **high** to enable the interface:
+
+![](documentation/figures/leds.jpeg)
+
+You can further debug using the System ILA module to debug the AXI bus and other signals such as interrupts from the PL to the PS.
